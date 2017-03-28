@@ -14,15 +14,9 @@ import (
 )
 
 var (
-	//listenPort = "0"
-	//LogLevel   = uint8(2)
 	pprofPort = "0"
-	//Pprof      = false
-	configIn = ""
-	//TLS      = false
-	//certPath   = ""
-	//keyPath    = ""
-	arg = Arg{
+	configIn  = ""
+	arg       = Arg{
 		LogLevel:            uint8(2),
 		PingTimeoutDuration: PingTimeoutDurationDefault,
 		ListenPort:          "0",
@@ -65,7 +59,7 @@ func getArgs() (*Arg, error) {
 	if len(osArgs) > 1 && osArgs[1] != "" {
 		paramStr = osArgs[1]
 	}
-	json.Unmarshal([]byte(paramStr), arg)
+	json.Unmarshal([]byte(paramStr), &arg)
 	// if err != nil {
 	// 	return nil, err
 	// }

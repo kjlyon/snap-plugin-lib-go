@@ -204,7 +204,7 @@ func applySecurityArgsToMeta(m *meta, args *Arg) error {
 // buildGRPCServer configures and builds GRPC server ready to server a plugin
 // instance
 func buildGRPCServer(typeOfPlugin pluginType, name string, version int, opts ...MetaOpt) (server *grpc.Server, m *meta, err error) {
-	args, _ := getArgs()
+	args, err := getArgs()
 	// if err != nil {
 	// 	fmt.Println("ERROR 1")
 	// 	return nil, nil, err
