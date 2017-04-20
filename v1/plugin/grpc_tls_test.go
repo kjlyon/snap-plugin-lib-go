@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -49,6 +50,58 @@ var (
 	prevPingTimeoutLimit int
 	grpcOptsBuilderInUse *grpcOptsBuilder
 )
+
+func init() {
+	// Filter out go test flags
+	getOSArgs = func() []string {
+		args := []string{}
+		for _, v := range os.Args {
+			if !strings.HasPrefix(v, "-test") {
+				args = append(args, v)
+			}
+		}
+		return args
+	}
+}
+
+type testServerSetup struct {
+	prevServerSetup tlsServerSetup
+	caCertPath      string
+}
+
+func newTestServerSetup(prevServerSetup tlsServerSetup) *testServerSetup {
+	return &testServerSetup{prevServerSetup: prevServerSetup}
+}
+
+// makeTLSConfig implementation that supports injecting CA certificate for
+// verification of TLS client certs.
+func (m *testServerSetup) makeTLSConfig() *tls.Config {
+	tlsConfig := m.prevServerSetup.makeTLSConfig()
+	if m.caCertPath == "" {
+		return tlsConfig
+	}
+	b, err := ioutil.ReadFile(m.caCertPath)
+	if err != nil {
+		panic(err)
+	}
+	tlsConfig.ClientCAs = x509.NewCertPool()
+	tlsConfig.ClientCAs.AppendCertsFromPEM(b)
+	return tlsConfig
+}
+
+func (m *testServerSetup) readRootCAs() (*x509.CertPool, error) {
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+	return rootCAs, nil
+}
+
+func (m *testServerSetup) updateServerOptions(options ...grpc.ServerOption) []grpc.ServerOption {
+	opts := m.prevServerSetup.updateServerOptions(options...)
+	opts = append(opts, grpc.MaxConcurrentStreams(2))
+	return opts
+}
 
 type testProxyCtor struct {
 	prevProxyCtor    pluginProxyConstructor
@@ -372,8 +425,9 @@ func setUpSecureTestcase(serverTLSUp, clientTLSUp bool) {
 		}
 		rootCertPathsArg = fmt.Sprintf(`,"RootCertPaths":"%s"`, certPaths)
 		mockInputOutputInUse.mockArgs = strings.Fields(fmt.Sprintf(`mock
-			{"CertPath":"%s","KeyPath":"%s","TLSEnabled":true%s}`,
-			tlsTestSrv+crtFileExt, tlsTestSrv+keyFileExt, rootCertPathsArg))
+			{"CertPath":"%s","KeyPath":"%s","TLSEnabled":true,"LogLevel":5}`,
+			tlsTestSrv+crtFileExt, tlsTestSrv+keyFileExt))
+		testTLSSetupInUse.caCertPath = tlsTestCA + crtFileExt
 	}
 	if clientTLSUp {
 		grpcOptsBuilderInUse.
