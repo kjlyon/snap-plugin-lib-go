@@ -38,15 +38,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	tlsTestCA     = "libtest-CA"
-	tlsTestSrv    = "libtest-srv"
-	tlsTestCli    = "libtest-cli"
-	crtFileExt    = ".crt"
-	keyFileExt    = ".key"
-	badCrtFileExt = "-BAD.crt"
-)
-
 func init() {
 	// Filter out go test flags
 	getOSArgs = func() []string {
@@ -59,6 +50,17 @@ func init() {
 		return args
 	}
 }
+
+const (
+	tlsTestCA     = "libtest-CA"
+	tlsTestSrv    = "libtest-srv"
+	tlsTestCli    = "libtest-cli"
+	crtFileExt    = ".crt"
+	keyFileExt    = ".key"
+	badCrtFileExt = "-BAD.crt"
+)
+
+var testFilesToRemove []string
 
 type mockTLSSetup struct {
 	prevSetup tlsServerSetup
@@ -116,20 +118,20 @@ func TestParsingArgs(t *testing.T) {
 		mockInputOutput := newMockInputOutput(libInputOutput)
 		libInputOutput = mockInputOutput
 		Convey("ListenPort should be properly parsed", func() {
-			mockInputOutput.mockArgs = strings.Fields(`main {"ListenPort":"4414"}`)
-			args, err := getArgs()
+			mockInputOutput.mockArg = `{"ListenPort":"4414"}`
+			args, err := getArg()
 			So(err, ShouldBeNil)
 			So(args.ListenPort, ShouldEqual, "4414")
 		})
 		Convey("PingTimeoutDuration should be properly parsed", func() {
-			mockInputOutput.mockArgs = strings.Fields(`main {"PingTimeoutDuration":3141}`)
-			args, err := getArgs()
+			mockInputOutput.mockArg = `{"PingTimeoutDuration":3141}`
+			args, err := getArg()
 			So(err, ShouldBeNil)
 			So(args.PingTimeoutDuration, ShouldEqual, 3141)
 		})
 		Convey("RootCertPaths should be properly parsed", func() {
-			mockInputOutput.mockArgs = strings.Fields(`main {"RootCertPaths":"test-cert.crt"}`)
-			args, err := getArgs()
+			mockInputOutput.mockArg = `{"RootCertPaths":"test-cert.crt"}`
+			args, err := getArg()
 			So(err, ShouldBeNil)
 			So(args.RootCertPaths, ShouldEqual, "test-cert.crt")
 		})

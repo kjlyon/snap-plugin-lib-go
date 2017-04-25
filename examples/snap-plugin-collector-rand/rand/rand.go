@@ -141,7 +141,7 @@ func (RandCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error
 	The metrics returned will be advertised to users who list all the metrics and will become targetable by tasks.
 */
 func (RandCollector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
-	//Simulate throwing error when a config is requried but not passed in
+	//Simulate throwing error when a config is required but not passed in
 	if req && len(cfg) < 1 {
 		return nil, fmt.Errorf("! When -required-config is set you must provide a config. Example: -config '{\"key\":\"kelly\", \"spirit-animal\":\"coatimundi\"}'\n")
 	}

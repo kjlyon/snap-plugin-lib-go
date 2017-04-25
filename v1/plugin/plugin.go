@@ -149,7 +149,7 @@ type tlsServerSetup interface {
 // osInputOutput supports interactions with OS for the plugin lib
 type OSInputOutput interface {
 	// readOSArgs gets command line arguments passed to application
-	readOSArgs() []string
+	readOSArg() string
 	// printOut outputs given data to application standard output
 	printOut(data string)
 
@@ -168,11 +168,14 @@ type standardInputOutput struct {
 var libInputOutput OSInputOutput = &standardInputOutput{}
 
 // readOSArgs implementation that returns application args passed by OS
-func (io *standardInputOutput) readOSArgs() []string {
+func (io *standardInputOutput) readOSArg() string {
 	if io.context != nil {
-		return io.context.Args().Tail()
+		return io.context.Args().First()
 	}
-	return os.Args
+	if len(os.Args) > 0 {
+		return os.Args[0]
+	}
+	return ""
 }
 
 // printOut implementation that emits data into standard output
@@ -425,7 +428,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy *pluginProxy
 	)
 	libInputOutput.setContext(c)
-	arg, err := getArgs()
+	arg, err := getArg()
 	if err != nil {
 		return err
 	}
@@ -503,7 +506,7 @@ func startPlugin(c *cli.Context) error {
 
 			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", httpPort))
 			if err != nil {
-				panic("Unable to get open port")
+				log.Fatal("Unable to get open port")
 			}
 			defer listener.Close()
 			fmt.Printf("Preamble URL: %v\n", listener.Addr().String())
@@ -531,13 +534,18 @@ func startPlugin(c *cli.Context) error {
 		if c.IsSet("config") {
 			err := json.Unmarshal([]byte(c.String("config")), &config)
 			if err != nil {
-				return fmt.Errorf("! Error when parsing config. Please ensure your config is valid. \n %v", err)
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Error("unable to parse config")
+				return err
 			}
 		}
 
 		switch pluginProxy.plugin.(type) {
 		case Collector:
-			showDiagnostics(*meta, pluginProxy, config)
+			return showDiagnostics(*meta, pluginProxy, config)
+		case StreamCollector:
+			fmt.Println("Diagnostics not currently available for streaming collector plugins.")
 		case Processor:
 			fmt.Println("Diagnostics not currently available for processor plugins.")
 		case Publisher:
@@ -550,7 +558,7 @@ func startPlugin(c *cli.Context) error {
 func printPreambleAndServe(srv server, m *meta, p *pluginProxy, port string, isPprof bool) (string, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
-		panic("Unable to get open port")
+		return "", err
 	}
 	l.Close()
 
@@ -587,22 +595,6 @@ func printPreambleAndServe(srv server, m *meta, p *pluginProxy, port string, isP
 	return string(preambleJSON), nil
 }
 
-// GetPluginType converts a pluginType to a string
-// describing what type of plugin this is
-func getPluginType(plType pluginType) string {
-	switch plType {
-	case collectorType:
-		return "collector"
-
-	case publisherType:
-		return "publisher"
-
-	case processorType:
-		return "processor"
-	}
-	return ""
-}
-
 // GetRPCType converts a RPCType (int) to a string
 // as described in snap/control/plugin/plugin.go
 func getRPCType(i int) string {
@@ -619,18 +611,16 @@ func showDiagnostics(m meta, p *pluginProxy, c Config) error {
 	printRuntimeDetails(m)
 	err := printConfigPolicy(p, c)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	met, err := printMetricTypes(p, c)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 	err = printCollectMetrics(p, met)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 	printContactUs()
 	return nil

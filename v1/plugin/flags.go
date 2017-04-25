@@ -48,7 +48,7 @@ var (
 	}
 	flHTTPPort = cli.IntFlag{
 		Name:  "stand-alone-port",
-		Usage: "specify http port when standAlone is set",
+		Usage: "specify http port when stand-alone is set",
 		Value: 8181,
 	}
 )

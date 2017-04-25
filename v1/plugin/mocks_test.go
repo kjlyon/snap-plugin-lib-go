@@ -24,7 +24,6 @@ package plugin
 import (
 	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	"github.com/urfave/cli"
@@ -221,23 +220,16 @@ func getMockMetricDataMap() map[string]Metric {
 	return mm
 }
 
-type mockServer struct {
-}
-
-func (ms *mockServer) Serve(net.Listener) error {
-	return errors.New("error")
-}
-
 type mockInputOutput struct {
-	mockArgs        []string
+	mockArg         string
 	output          []string
-	doReadOSArgs    func() []string
+	doReadOSArg     func() string
 	doPrintOut      func(string)
 	prevInputOutput OSInputOutput
 }
 
-func (f *mockInputOutput) readOSArgs() []string {
-	return f.doReadOSArgs()
+func (f *mockInputOutput) readOSArg() string {
+	return f.doReadOSArg()
 }
 
 func (f *mockInputOutput) printOut(data string) {
@@ -253,13 +245,13 @@ func (f *mockInputOutput) args() int {
 }
 
 func newMockInputOutput(prevInputOutput OSInputOutput) *mockInputOutput {
-	mock := mockInputOutput{mockArgs: []string{"mock", "{\"LogLevel\": 5}"}}
+	mock := mockInputOutput{mockArg: "{\"LogLevel\": 5}"}
 	mock.prevInputOutput = prevInputOutput
 	mock.doPrintOut = func(data string) {
 		mock.output = append(mock.output, data)
 	}
-	mock.doReadOSArgs = func() []string {
-		return mock.mockArgs
+	mock.doReadOSArg = func() string {
+		return mock.mockArg
 	}
 	return &mock
 }
