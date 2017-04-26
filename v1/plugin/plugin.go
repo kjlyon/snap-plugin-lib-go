@@ -57,11 +57,11 @@ func init() {
 	app.Flags = []cli.Flag{
 		flConfig,
 		flPort,
-		flPingTimeout,
 		flPprof,
 		flTLS,
 		flCertPath,
 		flKeyPath,
+		flRootCertPaths,
 		flStandAlone,
 		flHTTPPort,
 		flLogLevel,
@@ -428,7 +428,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy *pluginProxy
 	)
 	libInputOutput.setContext(c)
-	arg, err := getArg()
+	arg, err := processInput(c)
 	if err != nil {
 		return err
 	}
@@ -755,4 +755,27 @@ func printContactUs() {
 func timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	fmt.Printf("%s took %s \n\n", name, elapsed)
+}
+
+func processInput(c *cli.Context) (*Arg, error) {
+	arg := &Arg{}
+	if c.IsSet("log-level") {
+		arg.LogLevel = c.Int("log-level")
+	}
+	if c.IsSet("port") {
+		arg.ListenPort = c.String("port")
+	}
+	if c.IsSet("pprof") {
+		arg.Pprof = c.Bool("pprof")
+	}
+	if c.IsSet("cert-path") {
+		arg.CertPath = c.String("cert-path")
+	}
+	if c.IsSet("key-path") {
+		arg.KeyPath = c.String("key-path")
+	}
+	if c.IsSet("root-cert-paths") {
+		arg.RootCertPaths = c.String("root-cert-paths")
+	}
+	return processArg(arg)
 }

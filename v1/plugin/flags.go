@@ -1,7 +1,11 @@
 package plugin
 
-import "github.com/urfave/cli"
-import "time"
+import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/urfave/cli"
+)
 
 var (
 	flConfig = cli.StringFlag{
@@ -15,16 +19,10 @@ var (
 		Name:  "port",
 		Usage: "port to listen on",
 	}
-	// If PingTimeoutDuration was provided we set it
 	flLogLevel = cli.IntFlag{
 		Name:  "log-level",
 		Usage: "log level - 0:panic 1:fatal 2:error 3:warn 4:info 5:debug",
 		Value: 2,
-	}
-	flPingTimeout = cli.DurationFlag{
-		Name:  "timeout",
-		Usage: "how much time must elapse before a lack of healthcheck results in a timeout",
-		Value: time.Millisecond * 1500,
 	}
 	flPprof = cli.BoolFlag{
 		Name:  "pprof",
@@ -35,12 +33,16 @@ var (
 		Usage: "enable TLS",
 	}
 	flCertPath = cli.StringFlag{
-		Name:  "certPath",
+		Name:  "cert-path",
 		Usage: "necessary to provide when TLS enabled",
 	}
 	flKeyPath = cli.StringFlag{
-		Name:  "keyPath",
+		Name:  "key-path",
 		Usage: "necessary to provide when TLS enabled",
+	}
+	flRootCertPaths = cli.StringFlag{
+		Name:  "root-cert-paths",
+		Usage: fmt.Sprintf("root paths separated by OS-specific list separator (e.g. %v)", filepath.ListSeparator),
 	}
 	flStandAlone = cli.BoolFlag{
 		Name:  "stand-alone",

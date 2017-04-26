@@ -39,14 +39,13 @@ type Arg struct {
 	TLSEnabled bool
 }
 
-// getArg returns plugin args or default ones
-func getArg() (*Arg, error) {
+// processArg is provided *Arg and returns *Arg after unmarshaling the first command line argument which is expected to be valid JSON.
+func processArg(arg *Arg) (*Arg, error) {
 	osArg := libInputOutput.readOSArg()
 	// default parameters - can be parsed as JSON
 	if osArg == "" {
 		osArg = "{}"
 	}
-	arg := &Arg{}
 	err := json.Unmarshal([]byte(osArg), arg)
 	if err != nil {
 		return nil, err

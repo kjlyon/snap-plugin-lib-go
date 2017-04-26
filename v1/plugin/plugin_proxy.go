@@ -34,8 +34,12 @@ import (
 var (
 	// Timeout settings
 
-	// How many successive PingTimeouts must occur to equal a failure.
+	// PingTimeoutLimit is the number of successively missed ping health
+	// checks which must occur before the plugin is stopped
 	PingTimeoutLimit = 3
+	// PingTimeoutDuration is the duration during which a ping healthcheck
+	// should be received
+	PingTimeoutDuration = 3 * time.Second
 )
 
 type pluginProxyConstructor func(Plugin) *pluginProxy
@@ -61,7 +65,7 @@ func newPluginProxy(plugin Plugin) *pluginProxy {
 func defaultPluginProxyCtor(plugin Plugin) *pluginProxy {
 	return &pluginProxy{
 		plugin:              plugin,
-		PingTimeoutDuration: flPingTimeout.Value,
+		PingTimeoutDuration: PingTimeoutDuration,
 		halt:                make(chan struct{}),
 	}
 }

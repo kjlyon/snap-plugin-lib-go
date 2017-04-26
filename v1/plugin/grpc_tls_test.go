@@ -382,8 +382,6 @@ func setUpSecureTestcase(serverTLSUp, clientTLSUp bool) {
 		mockInputOutputInUse.mockArg = fmt.Sprintf(`
 			{"CertPath":"%s","KeyPath":"%s","TLSEnabled":true,"LogLevel":5,%s}`,
 			tlsTestSrv+crtFileExt, tlsTestSrv+keyFileExt, rootCertPathsArg)
-		//TODO(JC) wtf ??
-		// testTLSSetupInUse.caCertPath = tlsTestCA + crtFileExt
 	}
 	if clientTLSUp {
 		grpcOptsBuilderInUse.
