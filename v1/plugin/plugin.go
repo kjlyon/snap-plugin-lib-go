@@ -347,6 +347,7 @@ func StartCollector(plugin Collector, name string, version int, opts ...MetaOpt)
 	appArgs.version = version
 	appArgs.opts = opts
 	app.Version = strconv.Itoa(version)
+	app.Usage = "a Snap collector"
 	err := app.Run(getOSArgs())
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -366,6 +367,7 @@ func StartProcessor(plugin Processor, name string, version int, opts ...MetaOpt)
 	appArgs.version = version
 	appArgs.opts = opts
 	app.Version = strconv.Itoa(version)
+	app.Usage = "a Snap processor"
 	err := app.Run(getOSArgs())
 	if err != nil {
 		log.Error(err)
@@ -383,6 +385,7 @@ func StartPublisher(plugin Publisher, name string, version int, opts ...MetaOpt)
 	appArgs.version = version
 	appArgs.opts = opts
 	app.Version = strconv.Itoa(version)
+	app.Usage = "a Snap publisher"
 	err := app.Run(getOSArgs())
 	if err != nil {
 		log.Error(err)
@@ -400,6 +403,7 @@ func StartStreamCollector(plugin StreamCollector, name string, version int, opts
 	appArgs.version = version
 	appArgs.opts = opts
 	app.Version = strconv.Itoa(version)
+	app.Usage = "a Snap collector"
 	err := app.Run(getOSArgs())
 	if err != nil {
 		log.Error(err)
