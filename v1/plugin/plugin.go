@@ -38,6 +38,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"text/tabwriter"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin/rpc"
 )
@@ -593,7 +595,7 @@ func printPreambleAndServe(srv server, m *meta, p *pluginProxy, port string, isP
 	}
 	preambleJSON, err := json.Marshal(resp)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	return string(preambleJSON), nil
@@ -657,73 +659,17 @@ func printConfigPolicy(p *pluginProxy, conf Config) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Config Policy:")
-	if len(cPolicy.stringRules) > 0 {
-		for k, v := range cPolicy.stringRules {
-			fmt.Printf("    Namespace: %-30v", k)
-			for key, val := range v.Rules {
-				fmt.Printf("  Key: %-10v  Info: ", key)
-				if val.String() != "" {
-					_, ok := conf[key]
-					if strings.Contains(val.String(), "required:true") && !ok {
-						requiredConfigs += "! Warning: \"" + key + "\" required by plugin and not provided in config \n"
-					}
-					fmt.Printf("%v", val.String())
-					//TODO: Check if config values are of correct type
-				}
-			}
-			fmt.Printf("\n")
-		}
-	}
-	if len(cPolicy.integerRules) > 0 {
-		for k, v := range cPolicy.integerRules {
-			fmt.Printf("    Namespace: %-30v", k)
-			for key, val := range v.Rules {
-				fmt.Printf("  Key: %-10v  Info: ", key)
-				if val.String() != "" {
-					_, ok := conf[key]
-					if strings.Contains(val.String(), "required:true") && !ok {
-						requiredConfigs += "! Warning: \"" + key + "\" required by plugin and not provided in config \n"
-					}
-					fmt.Printf("%v", val.String())
-				}
-			}
-			fmt.Printf("\n")
-		}
-	}
-	if len(cPolicy.floatRules) > 0 {
-		for k, v := range cPolicy.floatRules {
-			fmt.Printf("    Namespace: %-30v", k)
-			for key, val := range v.Rules {
-				fmt.Printf("  Key: %-10v  Info: ", key)
-				if val.String() != "" {
-					_, ok := conf[key]
-					if strings.Contains(val.String(), "required:true") && !ok {
-						requiredConfigs += "! Warning: \"" + key + "\" required by plugin and not provided in config \n"
-					}
-					fmt.Printf("%v", val.String())
-				}
-			}
-			fmt.Printf("\n")
-		}
-	}
-	if len(cPolicy.boolRules) > 0 {
-		for k, v := range cPolicy.boolRules {
-			fmt.Printf("    Namespace: %-30v", k)
-			for key, val := range v.Rules {
-				fmt.Printf("  Key: %-10v  Info: ", key)
-				if val.String() != "" {
-					_, ok := conf[key]
-					if strings.Contains(val.String(), "required:true") && !ok {
-						requiredConfigs += "! Warning: \"" + key + "\" required by plugin and not provided in config \n"
-					}
-					fmt.Printf("%v", val.String())
-				}
-			}
-			fmt.Printf("\n")
-		}
-	}
 
+	fmt.Println("Config Policy:")
+	w := tabwriter.NewWriter(os.Stdout, 0, 8, 1, '\t', 0)
+	printFields(w, false, 0, "NAMESPACE", "KEY", "REQUIRED", "MINIMUM", "MAXIMUM")
+
+	requiredConfigs += printConfigPolicyStringRules(cPolicy, conf, w)
+	requiredConfigs += printConfigPolicyIntegerRules(cPolicy, conf, w)
+	requiredConfigs += printConfigPolicyFloatRules(cPolicy, conf, w)
+	requiredConfigs += printConfigPolicyBoolRules(cPolicy, conf, w)
+
+	w.Flush()
 	if requiredConfigs != "" {
 		requiredConfigs += "! Please provide config in form of: -config '{\"key\":\"kelly\", \"spirit-animal\":\"coatimundi\"}'\n"
 		err := fmt.Errorf(requiredConfigs)
@@ -731,6 +677,174 @@ func printConfigPolicy(p *pluginProxy, conf Config) error {
 	}
 
 	return nil
+}
+
+func printFields(tw *tabwriter.Writer, indent bool, width int, fields ...interface{}) {
+	var argArray []interface{}
+	if indent {
+		argArray = append(argArray, strings.Repeat(" ", width))
+	}
+	for i, field := range fields {
+		if field != nil {
+			argArray = append(argArray, field)
+		} else {
+			argArray = append(argArray, "")
+		}
+		if i < (len(fields) - 1) {
+			argArray = append(argArray, "\t")
+		}
+	}
+	fmt.Fprintln(tw, argArray...)
+}
+
+func stringInSlice(a string, list []string) (int, bool) {
+	for i, b := range list {
+		if b == a {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func parseString(vals []string, ns string, name string, conf Config, w *tabwriter.Writer) (requiredConfigs string) {
+	//default values
+	required := "false"
+	minimum := ""
+	maximum := ""
+
+	//check if required
+	if _, okReq := stringInSlice("required:true", vals); okReq {
+		required = "true"
+
+		if _, ok := conf[name]; !ok {
+			requiredConfigs += "! Warning: \"" + name + "\" required by plugin and not provided in config \n"
+		}
+	}
+
+	//check if has_min:true
+	if _, okMin := stringInSlice("has_min:true", vals); okMin {
+		//Check if minimum is specified, if not, default = 0
+		idxInArray := -1
+		valueAtIndex := ""
+		for i, b := range vals {
+			if strings.Contains(b, "minimum:") {
+				idxInArray = i
+				valueAtIndex = b
+			}
+		}
+		if idxInArray != -1 {
+			//parse val[idx] to get contents after :
+			idxOfColon := strings.Index(valueAtIndex, ":")
+			minimum = valueAtIndex[idxOfColon+1:]
+		} else {
+			minimum = "0"
+		}
+	}
+
+	//check if has_max:true
+	if _, okMax := stringInSlice("has_max:true", vals); okMax {
+		//Check if minimum is specified
+		idxInArray := -1
+		valueAtIndex := ""
+		for i, b := range vals {
+			if strings.Contains(b, "maximum:") {
+				idxInArray = i
+				valueAtIndex = b
+			}
+		}
+		if idxInArray != -1 {
+			//parse val[idx] to get contents after :
+			idxOfColon := strings.Index(valueAtIndex, ":")
+			maximum = valueAtIndex[idxOfColon+1:]
+		} else {
+			//No default max value
+		}
+	}
+
+	printFields(w, false, 0, ns, name, required, minimum, maximum)
+
+	return requiredConfigs
+}
+
+func printConfigPolicyStringRules(cPolicy ConfigPolicy, conf Config, w *tabwriter.Writer) string {
+	var requiredConfigs string
+	if len(cPolicy.stringRules) > 0 {
+		for k, v := range cPolicy.stringRules {
+			//namespace = k
+			for key, val := range v.Rules {
+				//name = key
+
+				if val.String() != "" {
+					//parse info:
+					vals := strings.Fields(val.String())
+					requiredConfigs += parseString(vals, k, key, conf, w)
+
+				} else {
+					printFields(w, false, 0, k, key, "false", "", "")
+				}
+			}
+		}
+	}
+
+	return requiredConfigs
+}
+
+func printConfigPolicyIntegerRules(cPolicy ConfigPolicy, conf Config, w *tabwriter.Writer) string {
+	var requiredConfigs string
+	if len(cPolicy.integerRules) > 0 {
+		for k, v := range cPolicy.integerRules {
+
+			for key, val := range v.Rules {
+				if val.String() != "" {
+					//parse info:
+					vals := strings.Fields(val.String())
+					requiredConfigs += parseString(vals, k, key, conf, w)
+
+				} else {
+					printFields(w, false, 0, k, key, "false", "", "")
+				}
+			}
+		}
+	}
+	return requiredConfigs
+}
+
+func printConfigPolicyFloatRules(cPolicy ConfigPolicy, conf Config, w *tabwriter.Writer) string {
+	var requiredConfigs string
+	if len(cPolicy.floatRules) > 0 {
+		for k, v := range cPolicy.floatRules {
+			for key, val := range v.Rules {
+				if val.String() != "" {
+					//parse info:
+					vals := strings.Fields(val.String())
+					requiredConfigs += parseString(vals, k, key, conf, w)
+
+				} else {
+					printFields(w, false, 0, k, key, "false", "", "")
+				}
+			}
+		}
+	}
+	return requiredConfigs
+}
+
+func printConfigPolicyBoolRules(cPolicy ConfigPolicy, conf Config, w *tabwriter.Writer) string {
+	var requiredConfigs string
+	if len(cPolicy.boolRules) > 0 {
+		for k, v := range cPolicy.boolRules {
+			for key, val := range v.Rules {
+				if val.String() != "" {
+					//parse info:
+					vals := strings.Fields(val.String())
+					requiredConfigs += parseString(vals, k, key, conf, w)
+
+				} else {
+					printFields(w, false, 0, k, key, "false", "", "")
+				}
+			}
+		}
+	}
+	return requiredConfigs
 }
 
 func printCollectMetrics(p *pluginProxy, m []Metric) error {
