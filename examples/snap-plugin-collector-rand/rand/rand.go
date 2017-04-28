@@ -204,6 +204,7 @@ func (RandCollector) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 
 	policy.AddNewBoolRule([]string{"random"},
 		"testbool",
-		false)
+		false,
+		plugin.SetDefaultBool(false))
 	return *policy, nil
 }
