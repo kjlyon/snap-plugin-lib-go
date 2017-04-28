@@ -512,7 +512,11 @@ func startPlugin(c *cli.Context) error {
 
 			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", httpPort))
 			if err != nil {
-				log.Fatal("Unable to get open port")
+				log.WithFields(
+					log.Fields{
+						"port": httpPort,
+					},
+				).Fatal("Unable to get open port")
 			}
 			defer listener.Close()
 			fmt.Printf("Preamble URL: %v\n", listener.Addr().String())
