@@ -895,5 +895,8 @@ func processInput(c *cli.Context) (*Arg, error) {
 	if c.IsSet("root-cert-paths") {
 		arg.RootCertPaths = c.String("root-cert-paths")
 	}
+	if c.IsSet("tls") {
+		arg.TLSEnabled = true
+	}
 	return processArg(arg)
 }
