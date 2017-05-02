@@ -40,12 +40,21 @@ Running plugin diagnostics is easy! Simply build the plugin, then run the execut
 
 ### Global Flags
 For specific details and to see all the options when running, run the plugin with the `-help` flag. The flag options are:
-```--config value       config file to use
-   --port value         port to listen on
-   --pingTimeout value  how much time must elapse before a lack of Ping results in a timeout (default: 0s)
-   --pprof              something about pprof
-   --help, -h           show help
-   --version, -v        print the version
+```
+GLOBAL OPTIONS:
+   --config value            config to use in JSON format
+   --port value              port GRPC will listen on
+   --pprof                   enable pprof
+   --tls                     enable TLS
+   --cert-path value         necessary to provide when TLS enabled
+   --key-path value          necessary to provide when TLS enabled
+   --root-cert-paths value   root paths separated by ':'
+   --stand-alone             enable stand alone plugin
+   --stand-alone-port value  specify http port when stand-alone is set (default: 8181)
+   --log-level value         log level - 0:panic 1:fatal 2:error 3:warn 4:info 5:debug (default: 2)
+   --required-config         Plugin requires config passed in
+   --help, -h                show help
+   --version, -v             print the version
 ```
 
 ### Config flag

@@ -10,14 +10,14 @@ import (
 var (
 	flConfig = cli.StringFlag{
 		Name:  "config",
-		Usage: "config file to use",
+		Usage: "config to use in JSON format",
 	}
 	// If no port was provided we let the OS select a port for us.
 	// This is safe as address is returned in the Response and keep
 	// alive prevents unattended plugins.
 	flPort = cli.StringFlag{
 		Name:  "port",
-		Usage: "port to listen on",
+		Usage: "port GRPC will listen on",
 	}
 	flLogLevel = cli.IntFlag{
 		Name:  "log-level",
@@ -26,7 +26,7 @@ var (
 	}
 	flPprof = cli.BoolFlag{
 		Name:  "pprof",
-		Usage: "set pprof",
+		Usage: "enable pprof",
 	}
 	flTLS = cli.BoolFlag{
 		Name:  "tls",
@@ -42,7 +42,7 @@ var (
 	}
 	flRootCertPaths = cli.StringFlag{
 		Name:  "root-cert-paths",
-		Usage: fmt.Sprintf("root paths separated by OS-specific list separator (e.g. %v)", filepath.ListSeparator),
+		Usage: fmt.Sprintf("root paths separated by '%c'", filepath.ListSeparator),
 	}
 	flStandAlone = cli.BoolFlag{
 		Name:  "stand-alone",

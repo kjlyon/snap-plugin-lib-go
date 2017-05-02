@@ -189,7 +189,6 @@ func (io *standardInputOutput) setContext(c *cli.Context) {
 	io.context = c
 }
 
-//TODO(JC) where is this used?  Should this be renamed?
 func (io *standardInputOutput) args() int {
 	if io.context != nil {
 		return io.context.NArg()
@@ -455,7 +454,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy = &proxy.pluginProxy
 		server, meta, err = buildGRPCServer(collectorType, appArgs.name, appArgs.version, arg, appArgs.opts...)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		rpc.RegisterCollectorServer(server, proxy)
 	case Processor:
@@ -466,7 +465,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy = &proxy.pluginProxy
 		server, meta, err = buildGRPCServer(processorType, appArgs.name, appArgs.version, arg, appArgs.opts...)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		rpc.RegisterProcessorServer(server, proxy)
 	case Publisher:
@@ -477,7 +476,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy = &proxy.pluginProxy
 		server, meta, err = buildGRPCServer(publisherType, appArgs.name, appArgs.version, arg, appArgs.opts...)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		rpc.RegisterPublisherServer(server, proxy)
 	case StreamCollector:
@@ -490,7 +489,7 @@ func startPlugin(c *cli.Context) error {
 		pluginProxy = &proxy.pluginProxy
 		server, meta, err = buildGRPCServer(publisherType, appArgs.name, appArgs.version, arg, appArgs.opts...)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		rpc.RegisterStreamCollectorServer(server, proxy)
 	default:
@@ -603,17 +602,6 @@ func printPreambleAndServe(srv server, m *meta, p *pluginProxy, port string, isP
 	}
 
 	return string(preambleJSON), nil
-}
-
-// GetRPCType converts a RPCType (int) to a string
-// as described in snap/control/plugin/plugin.go
-func getRPCType(i int) string {
-	if i == 0 {
-		return "NativeRPC (0)"
-	} else if i == 2 {
-		return "GRPC (2)"
-	}
-	return "Not a valid RPC Type"
 }
 
 func showDiagnostics(m meta, p *pluginProxy, c Config) error {
@@ -881,7 +869,7 @@ func printCollectMetrics(p *pluginProxy, m []Metric) error {
 
 func printRuntimeDetails(m meta) {
 	defer timeTrack(time.Now(), "printRuntimeDetails")
-	fmt.Printf("Runtime Details:\n    PluginName: %v, Version: %v \n    RPC Type: %v, RPC Version: %v \n", m.Name, m.Version, getRPCType(m.RPCType), m.RPCVersion)
+	fmt.Printf("Runtime Details:\n    PluginName: %v, Version: %v \n    RPC Type: %v, RPC Version: %v \n", m.Name, m.Version, m.RPCType.String(), m.RPCVersion)
 	fmt.Printf("    Operating system: %v \n    Architecture: %v \n    Go version: %v \n", runtime.GOOS, runtime.GOARCH, runtime.Version())
 }
 
